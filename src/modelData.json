@@ -1,0 +1,422 @@
+{
+  "defaultParkFactor": 1,
+  "defaultTemperature": 72,
+  "defaultWindMph": 7,
+  "defaultStarterFip": 4.1,
+  "defaultBullpenFip": 4.05,
+  "defaultStarterBattersFaced": 20,
+  "defaultStarterK9": 8.5,
+  "defaultHitterRatingsBySpot": [
+    108,
+    106,
+    104,
+    103,
+    101,
+    99,
+    97,
+    95,
+    93
+  ],
+  "weatherPresets": [
+    {
+      "value": "clear",
+      "label": "Clear"
+    },
+    {
+      "value": "cloudy",
+      "label": "Cloudy"
+    },
+    {
+      "value": "humid",
+      "label": "Humid"
+    },
+    {
+      "value": "dome",
+      "label": "Dome"
+    },
+    {
+      "value": "rain",
+      "label": "Light Rain Risk"
+    }
+  ],
+  "windDirections": [
+    {
+      "value": "neutral",
+      "label": "Neutral"
+    },
+    {
+      "value": "out",
+      "label": "Blowing Out"
+    },
+    {
+      "value": "in",
+      "label": "Blowing In"
+    },
+    {
+      "value": "cross",
+      "label": "Cross Wind"
+    }
+  ],
+  "teams": [
+    {
+      "id": 108,
+      "abbreviation": "LAA",
+      "name": "Los Angeles Angels",
+      "venue": "Angel Stadium",
+      "offenseRating": 70.5,
+      "bullpenFip": 4.34,
+      "starterFip": 4.39,
+      "starterK9": 8.7,
+      "starterBattersFaced": 20,
+      "parkFactor": 1.01
+    },
+    {
+      "id": 109,
+      "abbreviation": "ARI",
+      "name": "Arizona Diamondbacks",
+      "venue": "Chase Field",
+      "offenseRating": 76.9,
+      "bullpenFip": 4.02,
+      "starterFip": 4.03,
+      "starterK9": 9.2,
+      "starterBattersFaced": 20,
+      "parkFactor": 1.01
+    },
+    {
+      "id": 110,
+      "abbreviation": "BAL",
+      "name": "Baltimore Orioles",
+      "venue": "Oriole Park at Camden Yards",
+      "offenseRating": 84.1,
+      "bullpenFip": 3.95,
+      "starterFip": 3.91,
+      "starterK9": 9.1,
+      "starterBattersFaced": 20,
+      "parkFactor": 0.99
+    },
+    {
+      "id": 111,
+      "abbreviation": "BOS",
+      "name": "Boston Red Sox",
+      "venue": "Fenway Park",
+      "offenseRating": 87.5,
+      "bullpenFip": 4.12,
+      "starterFip": 4.08,
+      "starterK9": 8.9,
+      "starterBattersFaced": 20,
+      "parkFactor": 1.04
+    },
+    {
+      "id": 112,
+      "abbreviation": "CHC",
+      "name": "Chicago Cubs",
+      "venue": "Wrigley Field",
+      "offenseRating": 85.7,
+      "bullpenFip": 4.01,
+      "starterFip": 4.02,
+      "starterK9": 8.8,
+      "starterBattersFaced": 20,
+      "parkFactor": 0.98
+    },
+    {
+      "id": 113,
+      "abbreviation": "CIN",
+      "name": "Cincinnati Reds",
+      "venue": "Great American Ball Park",
+      "offenseRating": 81.1,
+      "bullpenFip": 4.27,
+      "starterFip": 4.23,
+      "starterK9": 8.7,
+      "starterBattersFaced": 20,
+      "parkFactor": 1.05
+    },
+    {
+      "id": 114,
+      "abbreviation": "CLE",
+      "name": "Cleveland Guardians",
+      "venue": "Progressive Field",
+      "offenseRating": 81.9,
+      "bullpenFip": 3.72,
+      "starterFip": 3.84,
+      "starterK9": 8.5,
+      "starterBattersFaced": 20,
+      "parkFactor": 0.99
+    },
+    {
+      "id": 115,
+      "abbreviation": "COL",
+      "name": "Colorado Rockies",
+      "venue": "Coors Field",
+      "offenseRating": 51.4,
+      "bullpenFip": 4.88,
+      "starterFip": 4.76,
+      "starterK9": 7.5,
+      "starterBattersFaced": 20,
+      "parkFactor": 1.13
+    },
+    {
+      "id": 116,
+      "abbreviation": "DET",
+      "name": "Detroit Tigers",
+      "venue": "Comerica Park",
+      "offenseRating": 83.6,
+      "bullpenFip": 3.96,
+      "starterFip": 3.89,
+      "starterK9": 9,
+      "starterBattersFaced": 20,
+      "parkFactor": 1
+    },
+    {
+      "id": 117,
+      "abbreviation": "HOU",
+      "name": "Houston Astros",
+      "venue": "Daikin Park",
+      "offenseRating": 87.3,
+      "bullpenFip": 3.93,
+      "starterFip": 3.88,
+      "starterK9": 9.4,
+      "starterBattersFaced": 20,
+      "parkFactor": 0.99
+    },
+    {
+      "id": 118,
+      "abbreviation": "KC",
+      "name": "Kansas City Royals",
+      "venue": "Kauffman Stadium",
+      "offenseRating": 81.7,
+      "bullpenFip": 4.11,
+      "starterFip": 4.05,
+      "starterK9": 8.4,
+      "starterBattersFaced": 20,
+      "parkFactor": 0.99
+    },
+    {
+      "id": 119,
+      "abbreviation": "LAD",
+      "name": "Los Angeles Dodgers",
+      "venue": "Dodger Stadium",
+      "offenseRating": 101.9,
+      "bullpenFip": 3.81,
+      "starterFip": 3.6,
+      "starterK9": 9.8,
+      "starterBattersFaced": 20,
+      "parkFactor": 0.99
+    },
+    {
+      "id": 120,
+      "abbreviation": "WSH",
+      "name": "Washington Nationals",
+      "venue": "Nationals Park",
+      "offenseRating": 67.1,
+      "bullpenFip": 4.5,
+      "starterFip": 4.41,
+      "starterK9": 8,
+      "starterBattersFaced": 20,
+      "parkFactor": 1
+    },
+    {
+      "id": 121,
+      "abbreviation": "NYM",
+      "name": "New York Mets",
+      "venue": "Citi Field",
+      "offenseRating": 91.5,
+      "bullpenFip": 4.07,
+      "starterFip": 4.01,
+      "starterK9": 9.1,
+      "starterBattersFaced": 20,
+      "parkFactor": 0.96
+    },
+    {
+      "id": 133,
+      "abbreviation": "ATH",
+      "name": "Athletics",
+      "venue": "Sutter Health Park",
+      "offenseRating": 76.2,
+      "bullpenFip": 4.43,
+      "starterFip": 4.37,
+      "starterK9": 8.1,
+      "starterBattersFaced": 20,
+      "parkFactor": 1.03
+    },
+    {
+      "id": 134,
+      "abbreviation": "PIT",
+      "name": "Pittsburgh Pirates",
+      "venue": "PNC Park",
+      "offenseRating": 74.2,
+      "bullpenFip": 4.18,
+      "starterFip": 4.09,
+      "starterK9": 8.8,
+      "starterBattersFaced": 20,
+      "parkFactor": 1.02
+    },
+    {
+      "id": 135,
+      "abbreviation": "SD",
+      "name": "San Diego Padres",
+      "venue": "Petco Park",
+      "offenseRating": 85,
+      "bullpenFip": 3.89,
+      "starterFip": 3.79,
+      "starterK9": 9.3,
+      "starterBattersFaced": 20,
+      "parkFactor": 0.96
+    },
+    {
+      "id": 136,
+      "abbreviation": "SEA",
+      "name": "Seattle Mariners",
+      "venue": "T-Mobile Park",
+      "offenseRating": 89.94,
+      "bullpenFip": 3.78,
+      "starterFip": 3.71,
+      "starterK9": 9.7,
+      "starterBattersFaced": 20,
+      "parkFactor": 0.94
+    },
+    {
+      "id": 137,
+      "abbreviation": "SF",
+      "name": "San Francisco Giants",
+      "venue": "Oracle Park",
+      "offenseRating": 82.4,
+      "bullpenFip": 3.98,
+      "starterFip": 4.01,
+      "starterK9": 8.9,
+      "starterBattersFaced": 20,
+      "parkFactor": 0.97
+    },
+    {
+      "id": 138,
+      "abbreviation": "STL",
+      "name": "St. Louis Cardinals",
+      "venue": "Busch Stadium",
+      "offenseRating": 76.5,
+      "bullpenFip": 4.19,
+      "starterFip": 4.15,
+      "starterK9": 8.2,
+      "starterBattersFaced": 20,
+      "parkFactor": 0.98
+    },
+    {
+      "id": 139,
+      "abbreviation": "TB",
+      "name": "Tampa Bay Rays",
+      "venue": "George M. Steinbrenner Field",
+      "offenseRating": 79.3,
+      "bullpenFip": 4.08,
+      "starterFip": 4.11,
+      "starterK9": 8.6,
+      "starterBattersFaced": 20,
+      "parkFactor": 1.01
+    },
+    {
+      "id": 140,
+      "abbreviation": "TEX",
+      "name": "Texas Rangers",
+      "venue": "Globe Life Field",
+      "offenseRating": 81.6,
+      "bullpenFip": 4.09,
+      "starterFip": 4.04,
+      "starterK9": 8.7,
+      "starterBattersFaced": 20,
+      "parkFactor": 0.99
+    },
+    {
+      "id": 141,
+      "abbreviation": "TOR",
+      "name": "Toronto Blue Jays",
+      "venue": "Rogers Centre",
+      "offenseRating": 87.6,
+      "bullpenFip": 4.02,
+      "starterFip": 4.07,
+      "starterK9": 8.5,
+      "starterBattersFaced": 20,
+      "parkFactor": 0.99
+    },
+    {
+      "id": 142,
+      "abbreviation": "MIN",
+      "name": "Minnesota Twins",
+      "venue": "Target Field",
+      "offenseRating": 76.5,
+      "bullpenFip": 4.13,
+      "starterFip": 4.09,
+      "starterK9": 8.9,
+      "starterBattersFaced": 20,
+      "parkFactor": 1
+    },
+    {
+      "id": 143,
+      "abbreviation": "PHI",
+      "name": "Philadelphia Phillies",
+      "venue": "Citizens Bank Park",
+      "offenseRating": 90.4,
+      "bullpenFip": 3.87,
+      "starterFip": 3.8,
+      "starterK9": 9.5,
+      "starterBattersFaced": 20,
+      "parkFactor": 1.01
+    },
+    {
+      "id": 144,
+      "abbreviation": "ATL",
+      "name": "Atlanta Braves",
+      "venue": "Truist Park",
+      "offenseRating": 86.7,
+      "bullpenFip": 3.9,
+      "starterFip": 3.85,
+      "starterK9": 9.4,
+      "starterBattersFaced": 20,
+      "parkFactor": 1
+    },
+    {
+      "id": 145,
+      "abbreviation": "CWS",
+      "name": "Chicago White Sox",
+      "venue": "Rate Field",
+      "offenseRating": 60.8,
+      "bullpenFip": 4.74,
+      "starterFip": 4.63,
+      "starterK9": 7.9,
+      "starterBattersFaced": 20,
+      "parkFactor": 1
+    },
+    {
+      "id": 146,
+      "abbreviation": "MIA",
+      "name": "Miami Marlins",
+      "venue": "loanDepot park",
+      "offenseRating": 74.1,
+      "bullpenFip": 4.39,
+      "starterFip": 4.31,
+      "starterK9": 8.1,
+      "starterBattersFaced": 20,
+      "parkFactor": 1.01
+    },
+    {
+      "id": 147,
+      "abbreviation": "NYY",
+      "name": "New York Yankees",
+      "venue": "Yankee Stadium",
+      "offenseRating": 94.1,
+      "bullpenFip": 3.86,
+      "starterFip": 3.78,
+      "starterK9": 9.7,
+      "starterBattersFaced": 20,
+      "parkFactor": 0.99
+    },
+    {
+      "id": 158,
+      "abbreviation": "MIL",
+      "name": "Milwaukee Brewers",
+      "venue": "American Family Field",
+      "offenseRating": 85.6,
+      "bullpenFip": 3.88,
+      "starterFip": 3.92,
+      "starterK9": 8.8,
+      "starterBattersFaced": 20,
+      "parkFactor": 0.99
+    }
+  ]
+}
