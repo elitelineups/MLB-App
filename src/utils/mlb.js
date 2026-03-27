@@ -36,6 +36,23 @@ const TEAM_LOGO_CODE_MAP = {
   WSH: 'wsh',
 };
 
+const TEAM_ABBREVIATION_ALIASES = {
+  AZ: 'ARI',
+  KCR: 'KC',
+  CHW: 'CWS',
+  SDP: 'SD',
+  SFG: 'SF',
+  TBR: 'TB',
+  OAK: 'ATH',
+  WAS: 'WSH',
+  WSN: 'WSH',
+};
+
+function normalizeTeamAbbreviation(value) {
+  const code = String(value || '').trim().toUpperCase();
+  return TEAM_ABBREVIATION_ALIASES[code] || code;
+}
+
 function normalizeName(value) {
   return String(value || '')
     .toLowerCase()
@@ -137,12 +154,13 @@ export function buildTeamOptions(modelData) {
 }
 
 export function getTeamLogoUrl(abbreviation) {
-  const code = TEAM_LOGO_CODE_MAP[String(abbreviation || '').trim().toUpperCase()];
+  const code = TEAM_LOGO_CODE_MAP[normalizeTeamAbbreviation(abbreviation)];
   return code ? `https://a.espncdn.com/i/teamlogos/mlb/500/${code}.png` : '';
 }
 
 export function getTeamByAbbreviation(modelData, abbreviation) {
-  return modelData.teams.find((team) => team.abbreviation === abbreviation) || modelData.teams[0];
+  const normalizedAbbreviation = normalizeTeamAbbreviation(abbreviation);
+  return modelData.teams.find((team) => team.abbreviation === normalizedAbbreviation) || modelData.teams[0];
 }
 
 export function createEmptyGameState(modelData, date = defaultDateString()) {
@@ -285,7 +303,8 @@ export function formatPostedLineupSummary(postedLineup) {
 }
 
 export function getFallbackLineupForHand(fallbackLineups, abbreviation, opposingPitcherHand) {
-  const teamFallbacks = fallbackLineups?.[abbreviation];
+  const normalizedAbbreviation = normalizeTeamAbbreviation(abbreviation);
+  const teamFallbacks = fallbackLineups?.[normalizedAbbreviation];
   if (!teamFallbacks) {
     return [];
   }
@@ -296,7 +315,7 @@ export function getFallbackLineupForHand(fallbackLineups, abbreviation, opposing
 
 function teamMatches(postedTeam, abbreviation) {
   const normalizedPosted = normalizeName(postedTeam);
-  const normalizedAbbreviation = normalizeName(abbreviation);
+  const normalizedAbbreviation = normalizeName(normalizeTeamAbbreviation(abbreviation));
   return normalizedPosted === normalizedAbbreviation || normalizedPosted.includes(normalizedAbbreviation);
 }
 

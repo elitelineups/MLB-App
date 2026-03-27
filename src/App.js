@@ -28,6 +28,7 @@ import {
   fetchWorkbookModelData,
 } from './utils/api';
 import { calculateProjections, formatDecimalOdds, formatRuns } from './utils/model';
+import { downloadProjectionWorkbook } from './utils/export';
 import ProjectionResults from './components/ProjectionResults';
 import TeamBadge from './components/TeamBadge';
 import TeamEditor from './components/TeamEditor';
@@ -1252,6 +1253,143 @@ function App() {
     setTeamStrengthRatings(seedTeamStrengthRatings);
   }
 
+  function buildProjectionStateForGame(game) {
+    const seededState = buildGameStateFromSelection(
+      game,
+      modelData,
+      createEmptyGameState(modelData, selectedDate)
+    );
+
+    const awayWorkbookPitcher =
+      workbookModelData.pitchers[normalizeNameKey(seededState.awayTeam.probablePitcher.name)];
+    const homeWorkbookPitcher =
+      workbookModelData.pitchers[normalizeNameKey(seededState.homeTeam.probablePitcher.name)];
+
+    const awayTeam = {
+      ...seededState.awayTeam,
+      offenseRating: teamStrengthRatings[seededState.awayTeam.abbreviation] ?? seededState.awayTeam.offenseRating,
+      bullpenFip:
+        workbookModelData.bullpenFipByTeam?.[seededState.awayTeam.abbreviation] ?? seededState.awayTeam.bullpenFip,
+      probablePitcher: awayWorkbookPitcher
+        ? {
+            ...seededState.awayTeam.probablePitcher,
+            hand: awayWorkbookPitcher.hand || seededState.awayTeam.probablePitcher.hand,
+            mlbamId: awayWorkbookPitcher.mlbamId ?? seededState.awayTeam.probablePitcher.mlbamId,
+            fip: awayWorkbookPitcher.fip ?? seededState.awayTeam.probablePitcher.fip,
+            l30KRate: awayWorkbookPitcher.l30KRate ?? seededState.awayTeam.probablePitcher.l30KRate,
+            seasonKRate: awayWorkbookPitcher.seasonKRate ?? seededState.awayTeam.probablePitcher.seasonKRate,
+            lastYearKRate: awayWorkbookPitcher.lastYearKRate ?? seededState.awayTeam.probablePitcher.lastYearKRate,
+            csw: awayWorkbookPitcher.csw ?? seededState.awayTeam.probablePitcher.csw,
+            whip: awayWorkbookPitcher.whip ?? seededState.awayTeam.probablePitcher.whip,
+            currentIp: awayWorkbookPitcher.currentIp ?? seededState.awayTeam.probablePitcher.currentIp,
+            ip2026: awayWorkbookPitcher.ip2026 ?? seededState.awayTeam.probablePitcher.ip2026,
+            ip2025: awayWorkbookPitcher.ip2025 ?? seededState.awayTeam.probablePitcher.ip2025,
+          }
+        : seededState.awayTeam.probablePitcher,
+    };
+
+    const homeTeam = {
+      ...seededState.homeTeam,
+      offenseRating: teamStrengthRatings[seededState.homeTeam.abbreviation] ?? seededState.homeTeam.offenseRating,
+      bullpenFip:
+        workbookModelData.bullpenFipByTeam?.[seededState.homeTeam.abbreviation] ?? seededState.homeTeam.bullpenFip,
+      probablePitcher: homeWorkbookPitcher
+        ? {
+            ...seededState.homeTeam.probablePitcher,
+            hand: homeWorkbookPitcher.hand || seededState.homeTeam.probablePitcher.hand,
+            mlbamId: homeWorkbookPitcher.mlbamId ?? seededState.homeTeam.probablePitcher.mlbamId,
+            fip: homeWorkbookPitcher.fip ?? seededState.homeTeam.probablePitcher.fip,
+            l30KRate: homeWorkbookPitcher.l30KRate ?? seededState.homeTeam.probablePitcher.l30KRate,
+            seasonKRate: homeWorkbookPitcher.seasonKRate ?? seededState.homeTeam.probablePitcher.seasonKRate,
+            lastYearKRate: homeWorkbookPitcher.lastYearKRate ?? seededState.homeTeam.probablePitcher.lastYearKRate,
+            csw: homeWorkbookPitcher.csw ?? seededState.homeTeam.probablePitcher.csw,
+            whip: homeWorkbookPitcher.whip ?? seededState.homeTeam.probablePitcher.whip,
+            currentIp: homeWorkbookPitcher.currentIp ?? seededState.homeTeam.probablePitcher.currentIp,
+            ip2026: homeWorkbookPitcher.ip2026 ?? seededState.homeTeam.probablePitcher.ip2026,
+            ip2025: homeWorkbookPitcher.ip2025 ?? seededState.homeTeam.probablePitcher.ip2025,
+          }
+        : seededState.homeTeam.probablePitcher,
+    };
+
+    const awayLineupEntries = getFallbackLineupForHand(
+      workbookModelData.lineupValues || {},
+      awayTeam.abbreviation,
+      homeTeam.probablePitcher.hand
+    );
+    const homeLineupEntries = getFallbackLineupForHand(
+      workbookModelData.lineupValues || {},
+      homeTeam.abbreviation,
+      awayTeam.probablePitcher.hand
+    );
+    const awayLineupNames = getFallbackLineupForHand(
+      combinedLineups,
+      awayTeam.abbreviation,
+      homeTeam.probablePitcher.hand
+    );
+    const homeLineupNames = getFallbackLineupForHand(
+      combinedLineups,
+      homeTeam.abbreviation,
+      awayTeam.probablePitcher.hand
+    );
+
+    return {
+      ...seededState,
+      workbookModelData,
+      awayTeam: {
+        ...awayTeam,
+        lineup: awayLineupEntries.length
+          ? createLineupFromWorkbookEntries(
+              awayTeam.name,
+              modelData.defaultHitterRatingsBySpot,
+              awayLineupEntries
+            )
+          : createLineupFromNames(
+              awayTeam.name,
+              modelData.defaultHitterRatingsBySpot,
+              awayLineupNames
+            ),
+      },
+      homeTeam: {
+        ...homeTeam,
+        lineup: homeLineupEntries.length
+          ? createLineupFromWorkbookEntries(
+              homeTeam.name,
+              modelData.defaultHitterRatingsBySpot,
+              homeLineupEntries
+            )
+          : createLineupFromNames(
+              homeTeam.name,
+              modelData.defaultHitterRatingsBySpot,
+              homeLineupNames
+            ),
+      },
+      environment: {
+        ...seededState.environment,
+        parkFactor:
+          workbookModelData.venueFactors[homeTeam.abbreviation] || seededState.environment.parkFactor,
+      },
+    };
+  }
+
+  function handleDownloadProjectionWorkbook() {
+    if (!games.length) {
+      return;
+    }
+
+    const gamesWithProjections = games.map((game) => {
+      const projectionState = buildProjectionStateForGame(game);
+      return {
+        game,
+        projections: calculateProjections(projectionState),
+      };
+    });
+
+    downloadProjectionWorkbook({
+      date: selectedDate,
+      gamesWithProjections,
+    });
+  }
+
   const rankedTeams = useMemo(
     () =>
       sortTeamsByStrength(modelData.teams, teamStrengthRatings).map((team, index) => ({
@@ -1432,6 +1570,14 @@ function App() {
                     {selectedGame ? formatGameLabel(selectedGame) : `${gameState.awayTeam.abbreviation} at ${gameState.homeTeam.abbreviation}`}
                   </p>
                 </div>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={handleDownloadProjectionWorkbook}
+                  disabled={scheduleStatus.loading || !games.length}
+                >
+                  Download Projections XLSX
+                </button>
               </div>
               <ProjectionResults
                 projections={projections}

@@ -5,6 +5,7 @@ const MLB_POWER_RANKINGS_URL = 'https://www.mlb.com/news/mlb-power-rankings-inau
 const SPORTS_INSIGHTS_MLB_EVENTS_URL = 'https://account.sportsinsights.com/wp/api/events/sport/3';
 const BALLDONTLIE_API_BASE = 'https://api.balldontlie.io/mlb/v1';
 const BALLDONTLIE_API_KEY = process.env.BALLDONTLIE_API_KEY || '';
+const cheerio = require('cheerio');
 const path = require('path');
 const { execFileSync } = require('child_process');
 
@@ -192,6 +193,14 @@ function parseTeamCodes(block) {
 
 function parseLineupNames(block) {
   const names = [
+    ...collectMatches(
+      block,
+      /<li[^>]+class="[^"]*lineup__player[^"]*"[\s\S]*?<a[^>]+title="([^"]+)"/g
+    ),
+    ...collectMatches(
+      block,
+      /<li[^>]+class="[^"]*lineup__player[^"]*"[\s\S]*?<a[^>]*>([^<]+)<\/a>/g
+    ),
     ...collectMatches(block, /lineup__player-highlight-name[^>]*>([^<]+)</g),
     ...collectMatches(block, /lineup__player-name[^>]*>([^<]+)</g),
     ...collectMatches(block, /data-rotowire-player-name="([^"]+)"/g),
@@ -213,19 +222,44 @@ function splitGameBlocks(html) {
 }
 
 function extractGamesFromHtml(html) {
-  return splitGameBlocks(html)
-    .map((block) => {
-      const teamCodes = parseTeamCodes(block);
-      const lineupSections = block.match(/<div[^>]+class="[^"]*(?:lineup__main|lineup__side|lineup__body)[^"]*"[\s\S]*?<\/div>/g) || [];
-      const awayLineup = parseLineupNames(lineupSections[0] || block);
-      const homeLineup = parseLineupNames(lineupSections[1] || block);
+  const $ = cheerio.load(html);
+
+  return $('.lineup.is-mlb')
+    .toArray()
+    .map((element) => {
+      const game = $(element);
+      if (game.hasClass('is-tools')) {
+        return null;
+      }
+
+      const awayAbbreviation = cleanText(
+        game.find('.lineup__team.is-visit .lineup__abbr').first().text()
+      ).toUpperCase();
+      const homeAbbreviation = cleanText(
+        game.find('.lineup__team.is-home .lineup__abbr').first().text()
+      ).toUpperCase();
+
+      const awayLineupNames = game
+        .find('.lineup__list.is-visit li.lineup__player a')
+        .map((_, link) => cleanText($(link).attr('title') || $(link).text()))
+        .get()
+        .filter(Boolean)
+        .slice(0, 9);
+      const homeLineupNames = game
+        .find('.lineup__list.is-home li.lineup__player a')
+        .map((_, link) => cleanText($(link).attr('title') || $(link).text()))
+        .get()
+        .filter(Boolean)
+        .slice(0, 9);
 
       return {
-        ...teamCodes,
-        awayLineup,
-        homeLineup,
+        awayAbbreviation,
+        homeAbbreviation,
+        awayLineup: awayLineupNames.map((name, index) => ({ slot: index + 1, name })),
+        homeLineup: homeLineupNames.map((name, index) => ({ slot: index + 1, name })),
       };
     })
+    .filter(Boolean)
     .filter((game) => game.awayAbbreviation && game.homeAbbreviation && (game.awayLineup.length || game.homeLineup.length));
 }
 

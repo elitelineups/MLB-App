@@ -1,4 +1,12 @@
 const MLB_SCHEDULE_URL = 'https://statsapi.mlb.com/api/v1/schedule';
+const TEAM_ABBREVIATION_ALIASES = {
+  AZ: 'ARI',
+};
+
+function normalizeTeamAbbreviation(value) {
+  const code = String(value || '').trim().toUpperCase();
+  return TEAM_ABBREVIATION_ALIASES[code] || code;
+}
 
 function ensureOk(response, fallbackMessage) {
   if (!response.ok) {
@@ -47,13 +55,17 @@ function mapScheduleGame(game) {
     awayTeam: {
       id: game.teams?.away?.team?.id || '',
       name: game.teams?.away?.team?.name || 'Away Team',
-      abbreviation: game.teams?.away?.team?.abbreviation || game.teams?.away?.team?.teamCode?.toUpperCase() || 'AWY',
+      abbreviation: normalizeTeamAbbreviation(
+        game.teams?.away?.team?.abbreviation || game.teams?.away?.team?.teamCode?.toUpperCase() || 'AWY'
+      ),
       probablePitcher: game.teams?.away?.probablePitcher || null,
     },
     homeTeam: {
       id: game.teams?.home?.team?.id || '',
       name: game.teams?.home?.team?.name || 'Home Team',
-      abbreviation: game.teams?.home?.team?.abbreviation || game.teams?.home?.team?.teamCode?.toUpperCase() || 'HME',
+      abbreviation: normalizeTeamAbbreviation(
+        game.teams?.home?.team?.abbreviation || game.teams?.home?.team?.teamCode?.toUpperCase() || 'HME'
+      ),
       probablePitcher: game.teams?.home?.probablePitcher || null,
     },
   };
