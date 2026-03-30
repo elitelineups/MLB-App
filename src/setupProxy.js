@@ -2,7 +2,7 @@ const ROTOWIRE_URL = 'https://www.rotowire.com/baseball/daily-lineups.php';
 const MLB_API_BASE = 'https://statsapi.mlb.com/api/v1';
 const MLB_GAME_FEED_BASE = 'https://statsapi.mlb.com/api/v1.1';
 const MLB_POWER_RANKINGS_URL = 'https://www.mlb.com/news/mlb-power-rankings-inaugural-2026-edition';
-const SPORTS_INSIGHTS_MLB_EVENTS_URL = 'https://account.sportsinsights.com/wp/api/events/sport/3';
+const SPORTS_INSIGHTS_MLB_EVENTS_URL = 'https://sportsinsights.actionnetwork.com/wp/api/events/sport/3';
 const BALLDONTLIE_API_BASE = 'https://api.balldontlie.io/mlb/v1';
 const BALLDONTLIE_API_KEY = process.env.BALLDONTLIE_API_KEY || '';
 const cheerio = require('cheerio');
@@ -27,6 +27,24 @@ function normalizeName(value) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, ' ')
     .trim();
+}
+
+const TEAM_NAME_ALIASES = {
+  athletics: 'athletics',
+  'oakland athletics': 'athletics',
+  'new york yankees': 'yankees',
+  'new york mets': 'mets',
+  'los angeles dodgers': 'dodgers',
+  'los angeles angels': 'angels',
+  'chicago cubs': 'cubs',
+  'chicago white sox': 'white sox',
+  'tampa bay rays': 'rays',
+  'st louis cardinals': 'cardinals',
+};
+
+function normalizeTeamName(value) {
+  const normalized = normalizeName(value);
+  return TEAM_NAME_ALIASES[normalized] || normalized;
 }
 
 function mapWeatherCondition(summary = '', stadiumTypeDisplay = '') {
@@ -92,11 +110,24 @@ function buildSportsInsightsWeather(event) {
   };
 }
 
-function matchesSportsInsightsEvent(event, awayTeam, homeTeam, date) {
-  const awayMatch = normalizeName(event?.VisitorTeam) === normalizeName(awayTeam);
-  const homeMatch = normalizeName(event?.HomeTeam) === normalizeName(homeTeam);
-  const eventDate = String(event?.EventDateTime || '').slice(0, 10);
-  return awayMatch && homeMatch && (!date || eventDate === date);
+function pickBestMatchingSportsInsightsEvent(events, awayTeam, homeTeam, date) {
+  const teamMatches = (events || []).filter((event) =>
+    normalizeTeamName(event?.VisitorTeam) === normalizeTeamName(awayTeam) &&
+    normalizeTeamName(event?.HomeTeam) === normalizeTeamName(homeTeam)
+  );
+
+  if (!teamMatches.length) {
+    return null;
+  }
+
+  if (!date) {
+    return teamMatches[0];
+  }
+
+  return (
+    teamMatches.find((event) => String(event?.EventDateTime || '').slice(0, 10) === date) ||
+    teamMatches[0]
+  );
 }
 
 const POWER_RANKING_NAME_TO_ABBREVIATION = {
@@ -729,10 +760,9 @@ module.exports = function setupProxy(app) {
         return;
       }
 
-      const events = await response.json();
-      const matchingEvent = (events || []).find((event) =>
-        matchesSportsInsightsEvent(event, awayTeam, homeTeam, date)
-      );
+      const payload = await response.json();
+      const events = Array.isArray(payload) ? payload : Array.isArray(payload?.EventDetails) ? payload.EventDetails : [];
+      const matchingEvent = pickBestMatchingSportsInsightsEvent(events, awayTeam, homeTeam, date);
 
       if (!matchingEvent) {
         res.json({
