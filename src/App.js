@@ -138,24 +138,78 @@ function mergeLineupWithSource(currentLineup, sourceLineup) {
   });
 }
 
-function buildOutPlayerKeySet(injuries = []) {
-  return new Set(
-    (injuries || [])
-      .map((injury) => normalizeNameKey(injury?.playerName))
-      .filter(Boolean)
-  );
+function buildUnavailablePlayerMatcher(injuries = []) {
+  const fullNameKeys = new Set();
+  const lastNameKeys = new Set();
+  const initialLastKeys = new Set();
+
+  (injuries || []).forEach((injury) => {
+    const normalizedName = normalizeNameKey(injury?.playerName);
+    if (!normalizedName) {
+      return;
+    }
+
+    fullNameKeys.add(normalizedName);
+
+    const parts = normalizedName.split(' ').filter(Boolean);
+    if (!parts.length) {
+      return;
+    }
+
+    const lastName = parts[parts.length - 1];
+    if (lastName) {
+      lastNameKeys.add(lastName);
+      if (parts[0]) {
+        initialLastKeys.add(`${parts[0].charAt(0)} ${lastName}`);
+      }
+    }
+  });
+
+  return {
+    fullNameKeys,
+    lastNameKeys,
+    initialLastKeys,
+  };
 }
 
-function filterNamesByAvailability(names = [], unavailableNameKeys) {
-  return (names || []).filter((name) => !unavailableNameKeys.has(normalizeNameKey(name)));
+function isUnavailablePlayerName(name, unavailablePlayerMatcher) {
+  const normalizedName = normalizeNameKey(name);
+  if (!normalizedName) {
+    return false;
+  }
+
+  if (unavailablePlayerMatcher.fullNameKeys.has(normalizedName)) {
+    return true;
+  }
+
+  const parts = normalizedName.split(' ').filter(Boolean);
+  if (!parts.length) {
+    return false;
+  }
+
+  const lastName = parts[parts.length - 1];
+  if (unavailablePlayerMatcher.lastNameKeys.has(lastName)) {
+    return true;
+  }
+
+  const first = parts[0];
+  if (!first) {
+    return false;
+  }
+
+  return unavailablePlayerMatcher.initialLastKeys.has(`${first.charAt(0)} ${lastName}`);
 }
 
-function filterEntriesByAvailability(entries = [], unavailableNameKeys) {
-  return (entries || []).filter((entry) => !unavailableNameKeys.has(normalizeNameKey(entry?.name)));
+function filterNamesByAvailability(names = [], unavailablePlayerMatcher) {
+  return (names || []).filter((name) => !isUnavailablePlayerName(name, unavailablePlayerMatcher));
 }
 
-function filterPostedLineupByAvailability(postedLineup = [], unavailableNameKeys) {
-  return (postedLineup || []).filter((player) => !unavailableNameKeys.has(normalizeNameKey(player?.name)));
+function filterEntriesByAvailability(entries = [], unavailablePlayerMatcher) {
+  return (entries || []).filter((entry) => !isUnavailablePlayerName(entry?.name, unavailablePlayerMatcher));
+}
+
+function filterPostedLineupByAvailability(postedLineup = [], unavailablePlayerMatcher) {
+  return (postedLineup || []).filter((player) => !isUnavailablePlayerName(player?.name, unavailablePlayerMatcher));
 }
 
 function App() {
@@ -212,12 +266,12 @@ function App() {
     () => games.find((game) => String(game.gamePk) === String(selectedGamePk)) || null,
     [games, selectedGamePk]
   );
-  const awayUnavailableNameKeys = useMemo(
-    () => buildOutPlayerKeySet(injuriesByTeam[gameState.awayTeam.abbreviation] || []),
+  const awayUnavailablePlayerMatcher = useMemo(
+    () => buildUnavailablePlayerMatcher(injuriesByTeam[gameState.awayTeam.abbreviation] || []),
     [injuriesByTeam, gameState.awayTeam.abbreviation]
   );
-  const homeUnavailableNameKeys = useMemo(
-    () => buildOutPlayerKeySet(injuriesByTeam[gameState.homeTeam.abbreviation] || []),
+  const homeUnavailablePlayerMatcher = useMemo(
+    () => buildUnavailablePlayerMatcher(injuriesByTeam[gameState.homeTeam.abbreviation] || []),
     [injuriesByTeam, gameState.homeTeam.abbreviation]
   );
   const rotowireMatchup = useMemo(
@@ -225,12 +279,12 @@ function App() {
     [postedLineups, gameState.awayTeam.abbreviation, gameState.homeTeam.abbreviation]
   );
   const awayPostedLineup = useMemo(
-    () => filterPostedLineupByAvailability(rotowireMatchup?.awayLineup || [], awayUnavailableNameKeys),
-    [rotowireMatchup, awayUnavailableNameKeys]
+    () => filterPostedLineupByAvailability(rotowireMatchup?.awayLineup || [], awayUnavailablePlayerMatcher),
+    [rotowireMatchup, awayUnavailablePlayerMatcher]
   );
   const homePostedLineup = useMemo(
-    () => filterPostedLineupByAvailability(rotowireMatchup?.homeLineup || [], homeUnavailableNameKeys),
-    [rotowireMatchup, homeUnavailableNameKeys]
+    () => filterPostedLineupByAvailability(rotowireMatchup?.homeLineup || [], homeUnavailablePlayerMatcher),
+    [rotowireMatchup, homeUnavailablePlayerMatcher]
   );
   const awaySheetLineupEntries = useMemo(
     () =>
@@ -240,13 +294,13 @@ function App() {
           gameState.awayTeam.abbreviation,
           gameState.homeTeam.probablePitcher.hand
         ),
-        awayUnavailableNameKeys
+        awayUnavailablePlayerMatcher
       ),
     [
       workbookModelData.lineupValues,
       gameState.awayTeam.abbreviation,
       gameState.homeTeam.probablePitcher.hand,
-      awayUnavailableNameKeys,
+      awayUnavailablePlayerMatcher,
     ]
   );
   const homeSheetLineupEntries = useMemo(
@@ -257,13 +311,13 @@ function App() {
           gameState.homeTeam.abbreviation,
           gameState.awayTeam.probablePitcher.hand
         ),
-        homeUnavailableNameKeys
+        homeUnavailablePlayerMatcher
       ),
     [
       workbookModelData.lineupValues,
       gameState.homeTeam.abbreviation,
       gameState.awayTeam.probablePitcher.hand,
-      homeUnavailableNameKeys,
+      homeUnavailablePlayerMatcher,
     ]
   );
   const awaySheetLineupNames = useMemo(
@@ -274,13 +328,13 @@ function App() {
           gameState.awayTeam.abbreviation,
           gameState.homeTeam.probablePitcher.hand
         ),
-        awayUnavailableNameKeys
+        awayUnavailablePlayerMatcher
       ),
     [
       combinedLineups,
       gameState.awayTeam.abbreviation,
       gameState.homeTeam.probablePitcher.hand,
-      awayUnavailableNameKeys,
+      awayUnavailablePlayerMatcher,
     ]
   );
   const homeSheetLineupNames = useMemo(
@@ -291,13 +345,13 @@ function App() {
           gameState.homeTeam.abbreviation,
           gameState.awayTeam.probablePitcher.hand
         ),
-        homeUnavailableNameKeys
+        homeUnavailablePlayerMatcher
       ),
     [
       combinedLineups,
       gameState.homeTeam.abbreviation,
       gameState.awayTeam.probablePitcher.hand,
-      homeUnavailableNameKeys,
+      homeUnavailablePlayerMatcher,
     ]
   );
   const awaySheetLineup = useMemo(
@@ -1257,8 +1311,8 @@ function App() {
     }
 
     const postedLineup = side === 'awayTeam'
-      ? filterPostedLineupByAvailability(rotowireMatchup.awayLineup, awayUnavailableNameKeys)
-      : filterPostedLineupByAvailability(rotowireMatchup.homeLineup, homeUnavailableNameKeys);
+      ? filterPostedLineupByAvailability(rotowireMatchup.awayLineup, awayUnavailablePlayerMatcher)
+      : filterPostedLineupByAvailability(rotowireMatchup.homeLineup, homeUnavailablePlayerMatcher);
     if (!postedLineup || postedLineup.length === 0) {
       return;
     }
@@ -1319,9 +1373,9 @@ function App() {
       return injuryStatus.error ? injuryStatus.error : '';
     }
 
-    const lineupNames = team.lineup.map((player) => normalizeNameKey(player.name));
+    const lineupNames = team.lineup.map((player) => player.name);
     const impacted = injuries.filter((injury) =>
-      lineupNames.includes(normalizeNameKey(injury.playerName))
+      lineupNames.some((name) => isUnavailablePlayerName(name, buildUnavailablePlayerMatcher([injury])))
     );
 
     if (!impacted.length) {
