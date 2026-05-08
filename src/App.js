@@ -75,6 +75,11 @@ function buildTeamStrengthSeed(teams) {
 }
 
 const TEAM_STRENGTH_STORAGE_VERSION = '2026-03-21';
+const BUILD_STYLE_STORAGE_KEY = 'mlbModelBuildStyle';
+const BUILD_STYLE_OPTIONS = [
+  { value: 'high_projection', label: 'High Projection' },
+  { value: 'contrarian', label: 'Contrarian' },
+];
 
 function readSavedTeamStrengths(storageKey) {
   try {
@@ -133,6 +138,26 @@ function mergeLineupWithSource(currentLineup, sourceLineup) {
   });
 }
 
+function buildOutPlayerKeySet(injuries = []) {
+  return new Set(
+    (injuries || [])
+      .map((injury) => normalizeNameKey(injury?.playerName))
+      .filter(Boolean)
+  );
+}
+
+function filterNamesByAvailability(names = [], unavailableNameKeys) {
+  return (names || []).filter((name) => !unavailableNameKeys.has(normalizeNameKey(name)));
+}
+
+function filterEntriesByAvailability(entries = [], unavailableNameKeys) {
+  return (entries || []).filter((entry) => !unavailableNameKeys.has(normalizeNameKey(entry?.name)));
+}
+
+function filterPostedLineupByAvailability(postedLineup = [], unavailableNameKeys) {
+  return (postedLineup || []).filter((player) => !unavailableNameKeys.has(normalizeNameKey(player?.name)));
+}
+
 function App() {
   const savedSeedStrengths = readSavedTeamStrengths('mlbModelSeedTeamStrengths');
   const savedCurrentStrengths = readSavedTeamStrengths('mlbModelCurrentTeamStrengths');
@@ -144,6 +169,10 @@ function App() {
   const [teamStrengthRatings, setTeamStrengthRatings] = useState(
     () => savedCurrentStrengths || savedSeedStrengths || buildTeamStrengthSeed(modelData.teams)
   );
+  const [buildStyle, setBuildStyle] = useState(() => {
+    const savedStyle = window.localStorage.getItem(BUILD_STYLE_STORAGE_KEY);
+    return savedStyle === 'contrarian' ? 'contrarian' : 'high_projection';
+  });
   const [rankingsStatus, setRankingsStatus] = useState({ loading: false, error: '' });
   const [rankingsSource, setRankingsSource] = useState('');
   const [games, setGames] = useState([]);
@@ -183,67 +212,97 @@ function App() {
     () => games.find((game) => String(game.gamePk) === String(selectedGamePk)) || null,
     [games, selectedGamePk]
   );
+  const awayUnavailableNameKeys = useMemo(
+    () => buildOutPlayerKeySet(injuriesByTeam[gameState.awayTeam.abbreviation] || []),
+    [injuriesByTeam, gameState.awayTeam.abbreviation]
+  );
+  const homeUnavailableNameKeys = useMemo(
+    () => buildOutPlayerKeySet(injuriesByTeam[gameState.homeTeam.abbreviation] || []),
+    [injuriesByTeam, gameState.homeTeam.abbreviation]
+  );
   const rotowireMatchup = useMemo(
     () => findRotowireMatchup(postedLineups, gameState.awayTeam.abbreviation, gameState.homeTeam.abbreviation),
     [postedLineups, gameState.awayTeam.abbreviation, gameState.homeTeam.abbreviation]
   );
-  const awayPostedLineup = useMemo(() => rotowireMatchup?.awayLineup || [], [rotowireMatchup]);
-  const homePostedLineup = useMemo(() => rotowireMatchup?.homeLineup || [], [rotowireMatchup]);
+  const awayPostedLineup = useMemo(
+    () => filterPostedLineupByAvailability(rotowireMatchup?.awayLineup || [], awayUnavailableNameKeys),
+    [rotowireMatchup, awayUnavailableNameKeys]
+  );
+  const homePostedLineup = useMemo(
+    () => filterPostedLineupByAvailability(rotowireMatchup?.homeLineup || [], homeUnavailableNameKeys),
+    [rotowireMatchup, homeUnavailableNameKeys]
+  );
   const awaySheetLineupEntries = useMemo(
     () =>
-      getFallbackLineupForHand(
-        workbookModelData.lineupValues || {},
-        gameState.awayTeam.abbreviation,
-        gameState.homeTeam.probablePitcher.hand
+      filterEntriesByAvailability(
+        getFallbackLineupForHand(
+          workbookModelData.lineupValues || {},
+          gameState.awayTeam.abbreviation,
+          gameState.homeTeam.probablePitcher.hand
+        ),
+        awayUnavailableNameKeys
       ),
     [
       workbookModelData.lineupValues,
       gameState.awayTeam.abbreviation,
       gameState.homeTeam.probablePitcher.hand,
+      awayUnavailableNameKeys,
     ]
   );
   const homeSheetLineupEntries = useMemo(
     () =>
-      getFallbackLineupForHand(
-        workbookModelData.lineupValues || {},
-        gameState.homeTeam.abbreviation,
-        gameState.awayTeam.probablePitcher.hand
+      filterEntriesByAvailability(
+        getFallbackLineupForHand(
+          workbookModelData.lineupValues || {},
+          gameState.homeTeam.abbreviation,
+          gameState.awayTeam.probablePitcher.hand
+        ),
+        homeUnavailableNameKeys
       ),
     [
       workbookModelData.lineupValues,
       gameState.homeTeam.abbreviation,
       gameState.awayTeam.probablePitcher.hand,
+      homeUnavailableNameKeys,
     ]
   );
   const awaySheetLineupNames = useMemo(
     () =>
-      getFallbackLineupForHand(
-        combinedLineups,
-        gameState.awayTeam.abbreviation,
-        gameState.homeTeam.probablePitcher.hand
+      filterNamesByAvailability(
+        getFallbackLineupForHand(
+          combinedLineups,
+          gameState.awayTeam.abbreviation,
+          gameState.homeTeam.probablePitcher.hand
+        ),
+        awayUnavailableNameKeys
       ),
     [
       combinedLineups,
       gameState.awayTeam.abbreviation,
       gameState.homeTeam.probablePitcher.hand,
+      awayUnavailableNameKeys,
     ]
   );
   const homeSheetLineupNames = useMemo(
     () =>
-      getFallbackLineupForHand(
-        combinedLineups,
-        gameState.homeTeam.abbreviation,
-        gameState.awayTeam.probablePitcher.hand
+      filterNamesByAvailability(
+        getFallbackLineupForHand(
+          combinedLineups,
+          gameState.homeTeam.abbreviation,
+          gameState.awayTeam.probablePitcher.hand
+        ),
+        homeUnavailableNameKeys
       ),
     [
       combinedLineups,
       gameState.homeTeam.abbreviation,
       gameState.awayTeam.probablePitcher.hand,
+      homeUnavailableNameKeys,
     ]
   );
   const awaySheetLineup = useMemo(
     () => (
-      awaySheetLineupEntries.length
+      buildStyle === 'high_projection' && awaySheetLineupEntries.length
         ? createLineupFromWorkbookEntries(
             gameState.awayTeam.name,
             modelData.defaultHitterRatingsBySpot,
@@ -255,11 +314,11 @@ function App() {
             awaySheetLineupNames
           )
     ),
-    [awaySheetLineupEntries, awaySheetLineupNames, gameState.awayTeam.name]
+    [buildStyle, awaySheetLineupEntries, awaySheetLineupNames, gameState.awayTeam.name]
   );
   const homeSheetLineup = useMemo(
     () => (
-      homeSheetLineupEntries.length
+      buildStyle === 'high_projection' && homeSheetLineupEntries.length
         ? createLineupFromWorkbookEntries(
             gameState.homeTeam.name,
             modelData.defaultHitterRatingsBySpot,
@@ -271,7 +330,7 @@ function App() {
             homeSheetLineupNames
           )
     ),
-    [homeSheetLineupEntries, homeSheetLineupNames, gameState.homeTeam.name]
+    [buildStyle, homeSheetLineupEntries, homeSheetLineupNames, gameState.homeTeam.name]
   );
   const projections = useMemo(() => calculateProjections(gameState), [gameState]);
   const awayPitcherMlbamId = gameState.awayTeam.probablePitcher.mlbamId;
@@ -679,35 +738,69 @@ function App() {
   }, [seedTeamStrengthRatings]);
 
   useEffect(() => {
+    window.localStorage.setItem(BUILD_STYLE_STORAGE_KEY, buildStyle);
+  }, [buildStyle]);
+
+  useEffect(() => {
     setGameState((current) => {
-      const nextAwaySourceLineup = awaySheetLineupEntries.length
-        ? createLineupFromWorkbookEntries(
-            current.awayTeam.name,
-            modelData.defaultHitterRatingsBySpot,
-            awaySheetLineupEntries
-          )
-        : awaySheetLineupNames.length
-        ? createLineupFromNames(current.awayTeam.name, modelData.defaultHitterRatingsBySpot, awaySheetLineupNames)
-        : awayPostedLineup.length
+      const nextAwaySourceLineup = buildStyle === 'contrarian'
+        ? awayPostedLineup.length
           ? normalizeLineupFromPosted(
               awayPostedLineup,
               createLineupFromNames(current.awayTeam.name, modelData.defaultHitterRatingsBySpot)
             )
-        : current.awayTeam.lineup;
-      const nextHomeSourceLineup = homeSheetLineupEntries.length
-        ? createLineupFromWorkbookEntries(
-            current.homeTeam.name,
-            modelData.defaultHitterRatingsBySpot,
-            homeSheetLineupEntries
-          )
-        : homeSheetLineupNames.length
-        ? createLineupFromNames(current.homeTeam.name, modelData.defaultHitterRatingsBySpot, homeSheetLineupNames)
-        : homePostedLineup.length
+          : awaySheetLineupNames.length
+            ? createLineupFromNames(current.awayTeam.name, modelData.defaultHitterRatingsBySpot, awaySheetLineupNames)
+            : awaySheetLineupEntries.length
+              ? createLineupFromNames(
+                  current.awayTeam.name,
+                  modelData.defaultHitterRatingsBySpot,
+                  awaySheetLineupEntries.map((entry) => entry?.name).filter(Boolean)
+                )
+              : current.awayTeam.lineup
+        : awaySheetLineupEntries.length
+          ? createLineupFromWorkbookEntries(
+              current.awayTeam.name,
+              modelData.defaultHitterRatingsBySpot,
+              awaySheetLineupEntries
+            )
+          : awaySheetLineupNames.length
+            ? createLineupFromNames(current.awayTeam.name, modelData.defaultHitterRatingsBySpot, awaySheetLineupNames)
+            : awayPostedLineup.length
+              ? normalizeLineupFromPosted(
+                  awayPostedLineup,
+                  createLineupFromNames(current.awayTeam.name, modelData.defaultHitterRatingsBySpot)
+                )
+              : current.awayTeam.lineup;
+      const nextHomeSourceLineup = buildStyle === 'contrarian'
+        ? homePostedLineup.length
           ? normalizeLineupFromPosted(
               homePostedLineup,
               createLineupFromNames(current.homeTeam.name, modelData.defaultHitterRatingsBySpot)
             )
-        : current.homeTeam.lineup;
+          : homeSheetLineupNames.length
+            ? createLineupFromNames(current.homeTeam.name, modelData.defaultHitterRatingsBySpot, homeSheetLineupNames)
+            : homeSheetLineupEntries.length
+              ? createLineupFromNames(
+                  current.homeTeam.name,
+                  modelData.defaultHitterRatingsBySpot,
+                  homeSheetLineupEntries.map((entry) => entry?.name).filter(Boolean)
+                )
+              : current.homeTeam.lineup
+        : homeSheetLineupEntries.length
+          ? createLineupFromWorkbookEntries(
+              current.homeTeam.name,
+              modelData.defaultHitterRatingsBySpot,
+              homeSheetLineupEntries
+            )
+          : homeSheetLineupNames.length
+            ? createLineupFromNames(current.homeTeam.name, modelData.defaultHitterRatingsBySpot, homeSheetLineupNames)
+            : homePostedLineup.length
+              ? normalizeLineupFromPosted(
+                  homePostedLineup,
+                  createLineupFromNames(current.homeTeam.name, modelData.defaultHitterRatingsBySpot)
+                )
+              : current.homeTeam.lineup;
       const nextAwayLineup = mergeLineupWithSource(current.awayTeam.lineup, nextAwaySourceLineup);
       const nextHomeLineup = mergeLineupWithSource(current.homeTeam.lineup, nextHomeSourceLineup);
       const awayChanged = lineupSignature(nextAwayLineup) !== lineupSignature(current.awayTeam.lineup);
@@ -737,6 +830,7 @@ function App() {
     homeSheetLineupEntries,
     homeSheetLineupNames,
     homePostedLineup,
+    buildStyle,
     workbookModelData,
   ]);
 
@@ -1162,7 +1256,9 @@ function App() {
       return;
     }
 
-    const postedLineup = side === 'awayTeam' ? rotowireMatchup.awayLineup : rotowireMatchup.homeLineup;
+    const postedLineup = side === 'awayTeam'
+      ? filterPostedLineupByAvailability(rotowireMatchup.awayLineup, awayUnavailableNameKeys)
+      : filterPostedLineupByAvailability(rotowireMatchup.homeLineup, homeUnavailableNameKeys);
     if (!postedLineup || postedLineup.length === 0) {
       return;
     }
@@ -1467,6 +1563,16 @@ function App() {
                     )}
                   </select>
                 </label>
+                <label className="field">
+                  <span>Build Style</span>
+                  <select value={buildStyle} onChange={(event) => setBuildStyle(event.target.value)}>
+                    {BUILD_STYLE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               </div>
               <div className="info-grid">
                 <label className="field">
@@ -1659,6 +1765,13 @@ function App() {
                   <p>
                     If you want to handicap a different matchup than the selected schedule game, change either team
                     from the dropdown and keep adjusting the linked pitcher and lineup inputs beneath it.
+                  </p>
+                </div>
+                <div className="note-card">
+                  <span className="note-label">Build Style</span>
+                  <p>
+                    High Projection favors workbook player ratings when available. Contrarian prioritizes posted or
+                    name-only lineups so users can pivot away from rating-driven defaults.
                   </p>
                 </div>
               </div>
